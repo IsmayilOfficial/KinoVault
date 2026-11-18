@@ -1,0 +1,268 @@
+export type MaturityRating = 'G' | 'PG' | 'PG-13' | 'R';
+export type MediaType = 'movie' | 'show';
+
+export interface MediaItem {
+  id: string;
+  mediaType: MediaType;
+  seasonsLabel?: string;
+  title: string;
+  tagline: string;
+  synopsis: string;
+  director: string;
+  cast: string[];
+  year: number;
+  durationLabel: string;
+  durationSeconds: number;
+  maturityRating: MaturityRating;
+  genres: string[];
+  quality: '4K HDR' | '1080p HD';
+  audio: 'Dolby Atmos' | '5.1 Surround';
+  backdropUrl: string;
+  mediaFilename: string;
+  featured: boolean;
+  trendingRank?: number;
+}
+
+export const MATURITY_LEVELS: Record<MaturityRating, number> = {
+  G: 0,
+  PG: 1,
+  'PG-13': 2,
+  R: 3,
+};
+
+export function isRatingAllowed(itemRating: MaturityRating, profileMaxRating: MaturityRating): boolean {
+  return MATURITY_LEVELS[itemRating] <= MATURITY_LEVELS[profileMaxRating];
+}
+
+export const MEDIA_CATALOG: MediaItem[] = [
+  {
+    id: 'meridian-nine',
+    mediaType: 'movie',
+    title: 'Meridian Nine',
+    tagline: 'Forty thousand kilometers above Earth, silence carries a pulse.',
+    synopsis:
+      'After an orbital observatory records an unscheduled gravitational shift above the Pacific, lone telemetry engineer Mara Vance must decode an impossible transmission before station power fails.',
+    director: 'Henrik Lindqvist',
+    cast: ['Clara Johansson', 'Dev Patel', 'Mads Lindholm'],
+    year: 2025,
+    durationLabel: '2h 18m',
+    durationSeconds: 24,
+    maturityRating: 'PG-13',
+    genres: ['Sci-Fi', 'Drama'],
+    quality: '4K HDR',
+    audio: 'Dolby Atmos',
+    backdropUrl: '/src/assets/images/cinema_meridian_nine_1795041005320.jpg',
+    mediaFilename: 'meridian-nine.mp4',
+    featured: true,
+    trendingRank: 1,
+  },
+  {
+    id: 'velvet-alibi',
+    mediaType: 'show',
+    seasonsLabel: 'Limited Series · 8 Episodes',
+    title: 'The Velvet Alibi',
+    tagline: 'Every cobblestone in Prague remembers who walked home alone.',
+    synopsis:
+      'A disgraced archivist is summoned back to the ministry after a ledger thought burned in 1978 surfaces in an estate auction, pulling him into a nocturnal maze of false confessions.',
+    director: 'Tomasz Kowalski',
+    cast: ['Matthias Schoenaerts', 'Lea Seydoux', 'Stellan Borg'],
+    year: 2024,
+    durationLabel: '52m / ep',
+    durationSeconds: 24,
+    maturityRating: 'R',
+    genres: ['Thriller & Noir', 'Drama'],
+    quality: '4K HDR',
+    audio: '5.1 Surround',
+    backdropUrl: '/src/assets/images/cinema_velvet_alibi_1795041007028.jpg',
+    mediaFilename: 'velvet-alibi.mp4',
+    featured: false,
+    trendingRank: 2,
+  },
+  {
+    id: 'svalbard-echoes',
+    mediaType: 'show',
+    seasonsLabel: '1 Season · 6 Episodes',
+    title: 'Echoes of Svalbard',
+    tagline: 'Where the polar night meets ancient glacial memory.',
+    synopsis:
+      'Filmed over fourteen winter weeks aboard an ice-class research vessel, oceanographers map acoustic currents beneath the High Arctic shelf as the sea freezes around them.',
+    director: 'Astrid Solberg',
+    cast: ['Narrated by Tilda Swinton'],
+    year: 2025,
+    durationLabel: '48m / ep',
+    durationSeconds: 24,
+    maturityRating: 'G',
+    genres: ['Documentary'],
+    quality: '4K HDR',
+    audio: 'Dolby Atmos',
+    backdropUrl: '/src/assets/images/cinema_svalbard_echoes_1795041007623.jpg',
+    mediaFilename: 'svalbard-echoes.mp4',
+    featured: false,
+    trendingRank: 4,
+  },
+  {
+    id: 'clockwork-harbor',
+    mediaType: 'movie',
+    title: 'Clockwork Harbor',
+    tagline: 'A tide of brass sails, sea fog, and forgotten charts.',
+    synopsis:
+      'Young apprentice mapmaker Pippa discovers a wind-powered compass inside her grandfather’s lighthouse that points toward an island only visible when the evening bells ring.',
+    director: 'Haruka Takahashi',
+    cast: ['Saoirse Ronan', 'Bill Nighy', 'Jacob Tremblay'],
+    year: 2024,
+    durationLabel: '1h 42m',
+    durationSeconds: 24,
+    maturityRating: 'PG',
+    genres: ['Family', 'Sci-Fi'],
+    quality: '4K HDR',
+    audio: 'Dolby Atmos',
+    backdropUrl: '/src/assets/images/cinema_clockwork_harbor_1795041007667.jpg',
+    mediaFilename: 'clockwork-harbor.mp4',
+    featured: false,
+    trendingRank: 3,
+  },
+  {
+    id: 'glass-horizon',
+    mediaType: 'movie',
+    title: 'Glass Horizon',
+    tagline: 'Some houses are built to keep the storm out. Others trap it inside.',
+    synopsis:
+      'Over a fog-bound weekend at their father’s concrete cliffside residence, two estranged architects negotiate the future of his studio while buried correspondence comes to light.',
+    director: 'Celine Moreau',
+    cast: ['Rebecca Ferguson', 'Oscar Isaac', 'Charlotte Rampling'],
+    year: 2025,
+    durationLabel: '2h 04m',
+    durationSeconds: 24,
+    maturityRating: 'R',
+    genres: ['Drama'],
+    quality: '4K HDR',
+    audio: '5.1 Surround',
+    backdropUrl: '/src/assets/images/cinema_glass_horizon_1795041008067.jpg',
+    mediaFilename: 'glass-horizon.mp4',
+    featured: false,
+  },
+  {
+    id: 'iron-courier',
+    mediaType: 'movie',
+    title: 'Iron Courier',
+    tagline: 'Four alpine passes. Zero radio contact.',
+    synopsis:
+      'Tasked with transporting an encrypted diplomatic drive across the Dolomites before midnight, a retired rally driver realizes every checkpoint along the border has been compromised.',
+    director: 'Lukas Brenner',
+    cast: ['Daniel Bruhl', 'Vicky Krieps', 'Nikolaj Coster-Waldau'],
+    year: 2023,
+    durationLabel: '1h 51m',
+    durationSeconds: 24,
+    maturityRating: 'R',
+    genres: ['Thriller & Noir'],
+    quality: '1080p HD',
+    audio: 'Dolby Atmos',
+    backdropUrl: '/src/assets/images/cinema_iron_courier_1795041009078.jpg',
+    mediaFilename: 'iron-courier.mp4',
+    featured: false,
+    trendingRank: 5,
+  },
+  {
+    id: 'kyoto-solstice',
+    mediaType: 'movie',
+    title: 'Solstice in Kyoto',
+    tagline: 'Autumn rain falls slowest on the things left unsaid.',
+    synopsis:
+      'A master restorer of antique paper screens spends one final rainy season teaching her apprentice the quiet craft of preserving family memory in a changing neighborhood.',
+    director: 'Kenji Watanabe',
+    cast: ['Sakura Ando', 'Hidetoshi Nishijima', 'Aoi Yu'],
+    year: 2024,
+    durationLabel: '1h 48m',
+    durationSeconds: 24,
+    maturityRating: 'PG',
+    genres: ['Drama', 'Family'],
+    quality: '4K HDR',
+    audio: '5.1 Surround',
+    backdropUrl: '/src/assets/images/cinema_kyoto_solstice_1795041009823.jpg',
+    mediaFilename: 'kyoto-solstice.mp4',
+    featured: false,
+  },
+  {
+    id: 'kepler-signal',
+    mediaType: 'show',
+    seasonsLabel: '2 Seasons · 16 Episodes',
+    title: 'Signal from Kepler',
+    tagline: 'Thirty-two dishes listening to a sky that finally answers.',
+    synopsis:
+      'At a high-altitude Atacama array, a graduate acoustician isolates a repeating harmonic pattern buried inside cosmic background noise—setting off a 72-hour international protocol.',
+    director: 'Mateo Alvarez',
+    cast: ['Gael Garcia Bernal', 'Jodie Comer', 'Mahershala Ali'],
+    year: 2025,
+    durationLabel: '56m / ep',
+    durationSeconds: 24,
+    maturityRating: 'PG-13',
+    genres: ['Sci-Fi', 'Documentary'],
+    quality: '4K HDR',
+    audio: 'Dolby Atmos',
+    backdropUrl: '/src/assets/images/cinema_kepler_signal_1795041009306.jpg',
+    mediaFilename: 'kepler-signal.mp4',
+    featured: false,
+  },
+];
+
+export const ALL_GENRES = ['All Titles', 'Sci-Fi', 'Thriller & Noir', 'Drama', 'Documentary', 'Family'] as const;
+
+export function getMediaById(id: string): MediaItem | undefined {
+  return MEDIA_CATALOG.find((item) => item.id === id);
+}
+
+// Indexed token relevance scoring for CMS catalog search
+export function scoreAndFilterCatalog(
+  items: MediaItem[],
+  options: { genre?: string; mediaType?: string; query?: string }
+): MediaItem[] {
+  const genre = options.genre?.trim() || 'All Titles';
+  const mediaType = options.mediaType?.trim() || 'all';
+  const rawQuery = options.query?.trim().toLowerCase() || '';
+  const tokens = rawQuery ? rawQuery.split(/\s+/).filter(Boolean) : [];
+
+  const scored: { item: MediaItem; score: number }[] = [];
+
+  for (const item of items) {
+    if (genre !== 'All Titles' && !item.genres.includes(genre)) continue;
+    if ((mediaType === 'movie' || mediaType === 'show') && item.mediaType !== mediaType) continue;
+
+    if (tokens.length === 0) {
+      scored.push({ item, score: item.featured ? 100 : item.year });
+      continue;
+    }
+
+    const titleLower = item.title.toLowerCase();
+    const directorLower = item.director.toLowerCase();
+    const castLower = item.cast.join(' ').toLowerCase();
+    const genresLower = item.genres.join(' ').toLowerCase();
+    const synopsisLower = item.synopsis.toLowerCase();
+
+    let totalScore = 0;
+    let allTokensMatched = true;
+
+    for (const token of tokens) {
+      let tokenScore = 0;
+      if (titleLower === rawQuery) tokenScore += 120;
+      else if (titleLower.startsWith(token)) tokenScore += 60;
+      else if (titleLower.includes(token)) tokenScore += 40;
+
+      if (directorLower.includes(token)) tokenScore += 25;
+      if (castLower.includes(token)) tokenScore += 20;
+      if (genresLower.includes(token)) tokenScore += 18;
+      if (synopsisLower.includes(token)) tokenScore += 8;
+
+      if (tokenScore === 0) {
+        allTokensMatched = false;
+        break;
+      }
+      totalScore += tokenScore;
+    }
+
+    if (allTokensMatched) {
+      scored.push({ item, score: totalScore });
+    }
+  }
+
+  return scored.sort((a, b) => b.score - a.score).map((entry) => entry.item);
+}
