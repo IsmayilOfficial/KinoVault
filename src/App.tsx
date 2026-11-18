@@ -218,6 +218,16 @@ export default function App() {
       .sort((a, b) => b.lastWatchedAt - a.lastWatchedAt);
   }, [catalog]);
 
+  const popularItems = useMemo(() => {
+    return catalog
+      .filter((item) => (item.popularityScore ?? 0) >= 85 || (item.viewCount ?? 0) >= 100_000)
+      .sort(
+        (a, b) =>
+          (b.popularityScore ?? 0) - (a.popularityScore ?? 0) ||
+          (b.viewCount ?? 0) - (a.viewCount ?? 0)
+      );
+  }, [catalog]);
+
   const trendingItems = useMemo(() => {
     return catalog
       .filter((item) => item.trendingRank !== null)
@@ -492,6 +502,17 @@ export default function App() {
                 title="Continue Watching"
                 subtitle={`Resume where ${activeProfile.name} left off`}
                 items={continueWatching}
+                onPlay={setPlayingItem}
+                onMoreInfo={setDetailItem}
+                onToggleWatchlist={handleToggleWatchlist}
+                onToggleFavorite={handleToggleFavorite}
+                maxRating={activeProfile.maxRating}
+              />
+
+              <CinemaRow
+                title="Popular"
+                subtitle="Most-watched films and series across the vault"
+                items={popularItems}
                 onPlay={setPlayingItem}
                 onMoreInfo={setDetailItem}
                 onToggleWatchlist={handleToggleWatchlist}

@@ -154,6 +154,20 @@ final class Security
         return $itemLevel <= $maxLevel;
     }
 
+    public static function displayAgeRating(string $rating, string $mediaType): string
+    {
+        if ($mediaType === 'show') {
+            return match ($rating) {
+                'G' => 'TV-G',
+                'PG' => 'TV-PG',
+                'PG-13' => 'TV-14',
+                'R' => 'TV-MA',
+                default => $rating,
+            };
+        }
+        return $rating;
+    }
+
     public static function resolveSafeMediaPath(string $mediaRoot, string $filename): ?string
     {
         if ($filename === '' || str_contains($filename, "\0") || str_contains($filename, '/') || str_contains($filename, '\\') || str_contains($filename, '..')) {

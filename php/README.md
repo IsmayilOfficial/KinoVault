@@ -3,14 +3,14 @@
 This directory contains a complete, production-structured **PHP 8.2+ / MySQL 8** implementation of the KinoVault home cinema platform.
 
 ## Architecture
-- `schema.sql` — MySQL 8 / MariaDB relational schema with `FULLTEXT` search index (`ft_media_search`), `users`, `user_profiles`, `password_resets`, `watch_history`, `watchlist`, and `security_audit_log`.
+- `schema.sql` — MySQL 8 / MariaDB relational schema with `FULLTEXT` search index (`ft_media_search`), popularity & upcoming columns (`popularity_score`, `view_count`, `trending_rank`, `is_upcoming`, `release_date_label`), per-title `audio_tracks_json` / `subtitle_tracks_json`, `users`, `user_profiles`, `password_resets`, `watch_history`, `watchlist`, `favorites` (distinct from `watchlist`), and `security_audit_log`.
 - `src/Database.php` — Hardened PDO connection (`ATTR_EMULATE_PREPARES => false`, `utf8mb4`).
-- `src/Security.php` — Argon2id password hashing, hardened `HttpOnly`/`Secure`/`SameSite` sessions, CSRF synchronizer tokens, HMAC-SHA256 signed 120s stream tickets bound to IP & session, and `realpath()` canonical path traversal checks.
+- `src/Security.php` — Argon2id password hashing, hardened `HttpOnly`/`Secure`/`SameSite` sessions, CSRF synchronizer tokens, HMAC-SHA256 signed 120s stream tickets bound to IP & session, `displayAgeRating()` formatter (`TV-*` for shows), and `realpath()` canonical path traversal checks.
 - `src/AuthController.php` — User registration, login with `session_regenerate_id(true)` and timing-normalized checks, logout, and hashed token password reset.
 - `src/ProfileController.php` — Profile switching with 5-attempt PIN lockout, profile updates, and chronological watch history management.
-- `src/CatalogController.php` — Indexed `FULLTEXT` boolean relevance search across titles, directors, cast, and synopses, with genre & movie/show filtering and server-side maturity rating gating.
-- `src/StreamController.php` — Authenticated HTTP `206 Partial Content` range streaming (`session_write_close()` before streaming) and an AES-128 HLS key delivery endpoint illustrating basic DRM key protection.
-- `public/index.php` — Front controller and streaming player template (`controlslist="nodownload"`, `disablepictureinpicture`, forensic session watermark).
+- `src/CatalogController.php` — Indexed `FULLTEXT` boolean relevance search across titles, directors, cast, and synopses, with genre & movie/show filtering, `getPopular()`, `getTrending()`, `getUpcoming()`, `resolveMediaTracks()`, profile-scoped `toggleFavorite()` / `toggleWatchlist()`, and server-side maturity rating gating.
+- `src/StreamController.php` — Authenticated HTTP `206 Partial Content` range streaming (`session_write_close()` before streaming), unreleased `is_upcoming` title blocking, and an AES-128 HLS key delivery endpoint illustrating basic DRM key protection.
+- `public/index.php` — Front controller supporting `?action=upcoming` / `?action=popular` JSON endpoints, CSRF-protected `?action=toggle_favorite` (Heart) & `?action=toggle_watchlist` (`+ My List` / `Remind Me`), Popular / Trending / Coming Soon card grids with visual age rating badges, and streaming player template with Audio & Subtitles selector, `controlslist="nodownload"`, `disablepictureinpicture`, and forensic session watermark.
 
 ## Running on a PHP 8.2+ Server
 ```bash

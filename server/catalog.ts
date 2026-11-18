@@ -1,6 +1,17 @@
 export type MaturityRating = 'G' | 'PG' | 'PG-13' | 'R';
 export type MediaType = 'movie' | 'show';
 
+export interface AudioTrackOption {
+  code: string;
+  label: string;
+  channelFormat?: string;
+}
+
+export interface SubtitleTrackOption {
+  code: string;
+  label: string;
+}
+
 export interface MediaItem {
   id: string;
   mediaType: MediaType;
@@ -17,10 +28,14 @@ export interface MediaItem {
   genres: string[];
   quality: '4K HDR' | '1080p HD';
   audio: 'Dolby Atmos' | '5.1 Surround';
+  audioTracks?: AudioTrackOption[];
+  subtitleTracks?: SubtitleTrackOption[];
   backdropUrl: string;
   mediaFilename?: string;
   featured: boolean;
   trendingRank?: number;
+  viewCount?: number;
+  popularityScore?: number;
   isUpcoming?: boolean;
   releaseDateLabel?: string;
 }
@@ -53,10 +68,25 @@ export const MEDIA_CATALOG: MediaItem[] = [
     genres: ['Sci-Fi', 'Drama'],
     quality: '4K HDR',
     audio: 'Dolby Atmos',
+    audioTracks: [
+      { code: 'en', label: 'English [Original]', channelFormat: 'Dolby Atmos' },
+      { code: 'es', label: 'Español', channelFormat: '5.1 Surround' },
+      { code: 'fr', label: 'Français', channelFormat: '5.1 Surround' },
+      { code: 'ja', label: '日本語', channelFormat: '5.1 Surround' },
+    ],
+    subtitleTracks: [
+      { code: 'en-cc', label: 'English [CC]' },
+      { code: 'es', label: 'Español' },
+      { code: 'fr', label: 'Français' },
+      { code: 'ja', label: '日本語' },
+      { code: 'de', label: 'Deutsch' },
+    ],
     backdropUrl: '/src/assets/images/cinema_meridian_nine_1795041005320.jpg',
     mediaFilename: 'meridian-nine.mp4',
     featured: true,
     trendingRank: 1,
+    viewCount: 320_400,
+    popularityScore: 98,
   },
   {
     id: 'velvet-alibi',
@@ -75,10 +105,24 @@ export const MEDIA_CATALOG: MediaItem[] = [
     genres: ['Thriller & Noir', 'Drama'],
     quality: '4K HDR',
     audio: '5.1 Surround',
+    audioTracks: [
+      { code: 'en', label: 'English [Original]', channelFormat: '5.1 Surround' },
+      { code: 'cs', label: 'Čeština', channelFormat: '5.1 Surround' },
+      { code: 'fr', label: 'Français', channelFormat: '5.1 Surround' },
+      { code: 'de', label: 'Deutsch', channelFormat: 'Stereo' },
+    ],
+    subtitleTracks: [
+      { code: 'en-cc', label: 'English [CC]' },
+      { code: 'cs', label: 'Čeština' },
+      { code: 'fr', label: 'Français' },
+      { code: 'de', label: 'Deutsch' },
+    ],
     backdropUrl: '/src/assets/images/cinema_velvet_alibi_1795041007028.jpg',
     mediaFilename: 'velvet-alibi.mp4',
     featured: false,
     trendingRank: 2,
+    viewCount: 248_900,
+    popularityScore: 95,
   },
   {
     id: 'svalbard-echoes',
@@ -97,10 +141,23 @@ export const MEDIA_CATALOG: MediaItem[] = [
     genres: ['Documentary'],
     quality: '4K HDR',
     audio: 'Dolby Atmos',
+    audioTracks: [
+      { code: 'en', label: 'English [Original]', channelFormat: 'Dolby Atmos' },
+      { code: 'no', label: 'Norsk', channelFormat: '5.1 Surround' },
+      { code: 'sv', label: 'Svenska', channelFormat: 'Stereo' },
+    ],
+    subtitleTracks: [
+      { code: 'en-cc', label: 'English [CC]' },
+      { code: 'no', label: 'Norsk' },
+      { code: 'sv', label: 'Svenska' },
+      { code: 'es', label: 'Español' },
+    ],
     backdropUrl: '/src/assets/images/cinema_svalbard_echoes_1795041007623.jpg',
     mediaFilename: 'svalbard-echoes.mp4',
     featured: false,
     trendingRank: 4,
+    viewCount: 142_300,
+    popularityScore: 91,
   },
   {
     id: 'clockwork-harbor',
@@ -122,6 +179,8 @@ export const MEDIA_CATALOG: MediaItem[] = [
     mediaFilename: 'clockwork-harbor.mp4',
     featured: false,
     trendingRank: 3,
+    viewCount: 185_600,
+    popularityScore: 94,
   },
   {
     id: 'glass-horizon',
@@ -142,6 +201,8 @@ export const MEDIA_CATALOG: MediaItem[] = [
     backdropUrl: '/src/assets/images/cinema_glass_horizon_1795041008067.jpg',
     mediaFilename: 'glass-horizon.mp4',
     featured: false,
+    viewCount: 64_200,
+    popularityScore: 78,
   },
   {
     id: 'iron-courier',
@@ -163,6 +224,8 @@ export const MEDIA_CATALOG: MediaItem[] = [
     mediaFilename: 'iron-courier.mp4',
     featured: false,
     trendingRank: 5,
+    viewCount: 79_500,
+    popularityScore: 81,
   },
   {
     id: 'kyoto-solstice',
@@ -180,9 +243,22 @@ export const MEDIA_CATALOG: MediaItem[] = [
     genres: ['Drama', 'Family'],
     quality: '4K HDR',
     audio: '5.1 Surround',
+    audioTracks: [
+      { code: 'ja', label: '日本語 [Original]', channelFormat: '5.1 Surround' },
+      { code: 'en', label: 'English', channelFormat: '5.1 Surround' },
+      { code: 'fr', label: 'Français', channelFormat: 'Stereo' },
+    ],
+    subtitleTracks: [
+      { code: 'en', label: 'English' },
+      { code: 'ja', label: '日本語 [CC]' },
+      { code: 'fr', label: 'Français' },
+      { code: 'es', label: 'Español' },
+    ],
     backdropUrl: '/src/assets/images/cinema_kyoto_solstice_1795041009823.jpg',
     mediaFilename: 'kyoto-solstice.mp4',
     featured: false,
+    viewCount: 84_100,
+    popularityScore: 82,
   },
   {
     id: 'kepler-signal',
@@ -201,9 +277,22 @@ export const MEDIA_CATALOG: MediaItem[] = [
     genres: ['Sci-Fi', 'Documentary'],
     quality: '4K HDR',
     audio: 'Dolby Atmos',
+    audioTracks: [
+      { code: 'es', label: 'Español [Original]', channelFormat: 'Dolby Atmos' },
+      { code: 'en', label: 'English', channelFormat: 'Dolby Atmos' },
+      { code: 'fr', label: 'Français', channelFormat: '5.1 Surround' },
+    ],
+    subtitleTracks: [
+      { code: 'en', label: 'English' },
+      { code: 'es-cc', label: 'Español [CC]' },
+      { code: 'fr', label: 'Français' },
+      { code: 'pt', label: 'Português' },
+    ],
     backdropUrl: '/src/assets/images/cinema_kepler_signal_1795041009306.jpg',
     mediaFilename: 'kepler-signal.mp4',
     featured: false,
+    viewCount: 164_800,
+    popularityScore: 92,
   },
 ];
 
@@ -304,6 +393,28 @@ export function getMediaById(id: string): MediaItem | undefined {
 
 export function getAnyMediaById(id: string): MediaItem | undefined {
   return MEDIA_CATALOG.find((item) => item.id === id) ?? UPCOMING_CATALOG.find((item) => item.id === id);
+}
+
+export function resolveAudioTracks(item: MediaItem): AudioTrackOption[] {
+  if (item.audioTracks && item.audioTracks.length > 0) {
+    return item.audioTracks;
+  }
+  return [
+    { code: 'en', label: 'English [Original]', channelFormat: item.audio },
+    { code: 'es', label: 'Español', channelFormat: '5.1 Surround' },
+    { code: 'fr', label: 'Français', channelFormat: '5.1 Surround' },
+  ];
+}
+
+export function resolveSubtitleTracks(item: MediaItem): SubtitleTrackOption[] {
+  if (item.subtitleTracks && item.subtitleTracks.length > 0) {
+    return item.subtitleTracks;
+  }
+  return [
+    { code: 'en-cc', label: 'English [CC]' },
+    { code: 'es', label: 'Español' },
+    { code: 'fr', label: 'Français' },
+  ];
 }
 
 // Indexed token relevance scoring for CMS catalog search

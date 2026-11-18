@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
+  Check,
+  Languages,
   Maximize,
   Minimize,
   Pause,
@@ -8,11 +10,13 @@ import {
   RotateCcw,
   RotateCw,
   Shield,
+  Subtitles,
   Volume2,
   VolumeX,
+  X,
 } from 'lucide-react';
 import { ApiError, apiRequest } from '../lib/api';
-import type { MediaItem, StreamTicketResponse } from '../types';
+import type { AudioTrackOption, MediaItem, StreamTicketResponse, SubtitleTrackOption } from '../types';
 
 interface VideoPlayerModalProps {
   item: MediaItem;
@@ -32,6 +36,28 @@ export function VideoPlayerModal({ item, onClose, onProgressUpdated }: VideoPlay
   const videoRef = useRef<HTMLVideoElement>(null);
   const hideTimerRef = useRef<number | null>(null);
 
+  const audioTracks = useMemo<AudioTrackOption[]>(() => {
+    if (item.audioTracks && item.audioTracks.length > 0) {
+      return item.audioTracks;
+    }
+    return [
+      { code: 'en', label: 'English [Original]', channelFormat: item.audio },
+      { code: 'es', label: 'Español', channelFormat: '5.1 Surround' },
+      { code: 'fr', label: 'Français', channelFormat: '5.1 Surround' },
+    ];
+  }, [item.audio, item.audioTracks]);
+
+  const subtitleTracks = useMemo<SubtitleTrackOption[]>(() => {
+    if (item.subtitleTracks && item.subtitleTracks.length > 0) {
+      return item.subtitleTracks;
+    }
+    return [
+      { code: 'en-cc', label: 'English [CC]' },
+      { code: 'es', label: 'Español' },
+      { code: 'fr', label: 'Français' },
+    ];
+  }, [item.subtitleTracks]);
+
   const [streamUrl, setStreamUrl] = useState('');
   const [watermark, setWatermark] = useState('');
   const [playing, setPlaying] = useState(false);
@@ -43,6 +69,43 @@ export function VideoPlayerModal({ item, onClose, onProgressUpdated }: VideoPlay
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [streamError, setStreamError] = useState('');
+  const [selectedAudioCode, setSelectedAudioCode] = useState<string>(audioTracks[0]?.code ?? 'en');
+  const [selectedSubtitleCode, setSelectedSubtitleCode] = useState<string>('off');
+  const [trackMenuOpen, setTrackMenuOpen] = useState(false);
+
+  // Reset selected audio/subtitle tracks when switching media titles
+  useEffect(() => {
+    setSelectedAudioCode(audioTracks[0]?.code ?? 'en');
+    setSelectedSubtitleCode('off');
+    setTrackMenuOpen(false);
+  }, [item.id, audioTracks]);
+
+  const activeAudioTrack = useMemo(
+    () => audioTracks.find((t) => t.code === selectedAudioCode) ?? audioTracks[0],
+    [audioTracks, selectedAudioCode]
+  );
+
+  const activeSubtitleTrack = useMemo(
+    () => (selectedSubtitleCode === 'off' ? null : subtitleTracks.find((t) => t.code === selectedSubtitleCode) ?? null),
+    [selectedSubtitleCode, subtitleTracks]
+  );
+
+  const activeSubtitleCue = useMemo(() => {
+    if (!activeSubtitleTrack) return '';
+    const langTag = activeSubtitleTrack.code.split('-')[0].toUpperCase();
+    const isClosedCaptions = activeSubtitleTrack.code.endsWith('-cc');
+    const segments = [
+      isClosedCaptions ? `[Atmospheric cinema score swells]` : item.tagline,
+      item.tagline,
+      item.synopsis.split('. ')[0]?.trim() + '.',
+      isClosedCaptions
+        ? `[${item.director} — ${activeAudioTrack?.label ?? 'Original Audio'}]`
+        : `${item.title} · ${item.year}`,
+    ];
+    const index = Math.min(segments.length - 1, Math.floor((currentTime / Math.max(duration, 1)) * segments.length));
+    const text = segments[index] || item.tagline;
+    return isClosedCaptions ? text : `[${langTag}] ${text}`;
+  }, [activeAudioTrack?.label, activeSubtitleTrack, currentTime, duration, item.director, item.synopsis, item.tagline, item.title, item.year]);
 
   // Obtain short-lived HMAC-signed, session-bound stream ticket
   useEffect(() => {
@@ -96,13 +159,26 @@ export function VideoPlayerModal({ item, onClose, onProgressUpdated }: VideoPlay
       window.clearTimeout(hideTimerRef.current);
     }
     hideTimerRef.current = window.setTimeout(() => {
-      if (videoRef.current && !videoRef.current.paused) {
+      if (videoRef.current && !videoRef.current.paused && !trackMenuOpen) {
         setControlsVisible(false);
       }
     }, 2600);
-  }, []);
+  }, [trackMenuOpen]);
+
+  useEffect(() => {
+    if (trackMenuOpen) {
+      setControlsVisible(true);
+      if (hideTimerRef.current !== null) {
+        window.clearTimeout(hideTimerRef.current);
+      }
+    }
+  }, [trackMenuOpen]);
 
   const togglePlay = useCallback(() => {
+    if (trackMenuOpen) {
+      setTrackMenuOpen(false);
+      return;
+    }
     const vid = videoRef.current;
     if (!vid) return;
     if (vid.paused) {
@@ -112,7 +188,7 @@ export function VideoPlayerModal({ item, onClose, onProgressUpdated }: VideoPlay
       void persistProgress(vid.currentTime);
     }
     scheduleHideControls();
-  }, [persistProgress, scheduleHideControls]);
+  }, [persistProgress, scheduleHideControls, trackMenuOpen]);
 
   const seekBy = useCallback(
     (delta: number) => {
@@ -149,7 +225,11 @@ export function VideoPlayerModal({ item, onClose, onProgressUpdated }: VideoPlay
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         e.preventDefault();
-        handleClose();
+        if (trackMenuOpen) {
+          setTrackMenuOpen(false);
+        } else {
+          handleClose();
+        }
       } else if (e.key === ' ' || e.key.toLowerCase() === 'k') {
         e.preventDefault();
         togglePlay();
@@ -169,11 +249,14 @@ export function VideoPlayerModal({ item, onClose, onProgressUpdated }: VideoPlay
       } else if (e.key.toLowerCase() === 'f') {
         e.preventDefault();
         void toggleFullscreen();
+      } else if (e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        setTrackMenuOpen((prev) => !prev);
       }
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [handleClose, seekBy, toggleFullscreen, togglePlay]);
+  }, [handleClose, seekBy, toggleFullscreen, togglePlay, trackMenuOpen]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -214,9 +297,13 @@ export function VideoPlayerModal({ item, onClose, onProgressUpdated }: VideoPlay
 
         <div className="text-right">
           <div className="font-display text-sm sm:text-base font-semibold text-white">{item.title}</div>
-          <div className="text-xs text-[#9CA3AF] inline-flex items-center gap-1.5">
+          <div className="text-xs text-[#9CA3AF] inline-flex items-center gap-1.5 flex-wrap justify-end">
             <Shield className="w-3 h-3 text-emerald-400" />
-            <span>Signed License · {item.quality} · {item.audio}</span>
+            <span>
+              Signed License · {item.quality} · {activeAudioTrack?.label ?? item.audio}
+              {activeAudioTrack?.channelFormat ? ` (${activeAudioTrack.channelFormat})` : ''}
+              {activeSubtitleTrack ? ` · Sub: ${activeSubtitleTrack.label}` : ''}
+            </span>
           </div>
         </div>
       </div>
@@ -265,6 +352,20 @@ export function VideoPlayerModal({ item, onClose, onProgressUpdated }: VideoPlay
         ) : !streamError ? (
           <div className="text-xs text-[#9CA3AF]">Verifying stream license...</div>
         ) : null}
+
+        {/* Active Subtitle Caption Display */}
+        {activeSubtitleTrack && activeSubtitleCue && !streamError && (
+          <div
+            aria-live="polite"
+            className={`pointer-events-none absolute inset-x-0 z-10 flex justify-center px-6 transition-all duration-200 ${
+              controlsVisible ? 'bottom-32' : 'bottom-10'
+            }`}
+          >
+            <div className="max-w-2xl rounded-md bg-black/80 px-4 py-1.5 text-center text-sm sm:text-base font-medium text-white shadow-lg border border-white/10">
+              {activeSubtitleCue}
+            </div>
+          </div>
+        )}
 
         {/* Subtle Forensic Anti-Sharing Session Watermark */}
         {watermark && !streamError && (
@@ -319,7 +420,118 @@ export function VideoPlayerModal({ item, onClose, onProgressUpdated }: VideoPlay
           />
         </div>
 
-        <div className="flex items-center justify-between gap-4">
+        <div className="relative flex items-center justify-between gap-4">
+          {/* Audio & Subtitles Popover */}
+          {trackMenuOpen && (
+            <div
+              role="dialog"
+              aria-label="Audio and subtitles selector"
+              className="absolute right-0 bottom-14 z-30 w-[min(92vw,420px)] rounded-xl bg-[#12141A]/95 backdrop-blur-md border border-white/15 shadow-2xl p-4"
+            >
+              <div className="flex items-center justify-between border-b border-white/10 pb-2.5 mb-3">
+                <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-white">
+                  <Languages className="w-4 h-4 text-[#E50914]" />
+                  Audio &amp; Subtitles
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTrackMenuOpen(false)}
+                  aria-label="Close audio and subtitles menu"
+                  className="p-1 text-[#9CA3AF] hover:text-white rounded transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF] mb-2">
+                    Audio Language
+                  </div>
+                  <div className="space-y-1 max-h-48 overflow-y-auto pr-1" role="menu" aria-label="Audio language options">
+                    {audioTracks.map((track) => {
+                      const active = track.code === activeAudioTrack?.code;
+                      return (
+                        <button
+                          key={track.code}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={active}
+                          onClick={() => {
+                            setSelectedAudioCode(track.code);
+                            scheduleHideControls();
+                          }}
+                          className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-left text-xs transition-colors ${
+                            active
+                              ? 'bg-[#E50914]/20 text-white border border-[#E50914]/50'
+                              : 'text-[#D1D5DB] hover:bg-white/10 border border-transparent'
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <div className="font-medium truncate">{track.label}</div>
+                            {track.channelFormat && (
+                              <div className="text-[10px] text-[#9CA3AF] truncate">{track.channelFormat}</div>
+                            )}
+                          </div>
+                          {active && <Check className="w-3.5 h-3.5 shrink-0 text-[#E50914]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF] mb-2">
+                    Subtitles
+                  </div>
+                  <div className="space-y-1 max-h-48 overflow-y-auto pr-1" role="menu" aria-label="Subtitle track options">
+                    <button
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={selectedSubtitleCode === 'off'}
+                      onClick={() => {
+                        setSelectedSubtitleCode('off');
+                        scheduleHideControls();
+                      }}
+                      className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-left text-xs transition-colors ${
+                        selectedSubtitleCode === 'off'
+                          ? 'bg-[#E50914]/20 text-white border border-[#E50914]/50'
+                          : 'text-[#D1D5DB] hover:bg-white/10 border border-transparent'
+                      }`}
+                    >
+                      <span className="font-medium">Off</span>
+                      {selectedSubtitleCode === 'off' && <Check className="w-3.5 h-3.5 shrink-0 text-[#E50914]" />}
+                    </button>
+
+                    {subtitleTracks.map((track) => {
+                      const active = track.code === selectedSubtitleCode;
+                      return (
+                        <button
+                          key={track.code}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={active}
+                          onClick={() => {
+                            setSelectedSubtitleCode(track.code);
+                            scheduleHideControls();
+                          }}
+                          className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-left text-xs transition-colors ${
+                            active
+                              ? 'bg-[#E50914]/20 text-white border border-[#E50914]/50'
+                              : 'text-[#D1D5DB] hover:bg-white/10 border border-transparent'
+                          }`}
+                        >
+                          <span className="font-medium truncate">{track.label}</span>
+                          {active && <Check className="w-3.5 h-3.5 shrink-0 text-[#E50914]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-3 sm:gap-4">
             <button
               type="button"
@@ -386,7 +598,30 @@ export function VideoPlayerModal({ item, onClose, onProgressUpdated }: VideoPlay
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setTrackMenuOpen((prev) => !prev);
+                scheduleHideControls();
+              }}
+              aria-label="Audio and subtitles"
+              aria-expanded={trackMenuOpen}
+              aria-haspopup="dialog"
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                trackMenuOpen || selectedSubtitleCode !== 'off'
+                  ? 'bg-[#E50914] text-white'
+                  : 'bg-white/10 hover:bg-white/20 text-white'
+              }`}
+            >
+              <Subtitles className="w-4 h-4" />
+              <span className="hidden md:inline">
+                {activeSubtitleTrack
+                  ? `${(activeAudioTrack?.code ?? 'en').toUpperCase()} · ${activeSubtitleTrack.code.toUpperCase()}`
+                  : `Audio & Subtitles`}
+              </span>
+            </button>
+
             <button
               type="button"
               onClick={() => {
@@ -395,7 +630,7 @@ export function VideoPlayerModal({ item, onClose, onProgressUpdated }: VideoPlay
                 setPlaybackRate(next);
                 if (videoRef.current) videoRef.current.playbackRate = next;
               }}
-              className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-xs font-mono-code text-white whitespace-nowrap"
+              className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-mono-code text-white whitespace-nowrap"
             >
               {playbackRate}x
             </button>

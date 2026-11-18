@@ -30,6 +30,17 @@ export interface AuthStateResponse {
   activeProfile?: UserProfile | null;
 }
 
+export interface AudioTrackOption {
+  code: string;
+  label: string;
+  channelFormat?: string;
+}
+
+export interface SubtitleTrackOption {
+  code: string;
+  label: string;
+}
+
 export interface MediaItem {
   id: string;
   mediaType: MediaType;
@@ -46,9 +57,13 @@ export interface MediaItem {
   genres: string[];
   quality: '4K HDR' | '1080p HD';
   audio: 'Dolby Atmos' | '5.1 Surround';
+  audioTracks?: AudioTrackOption[];
+  subtitleTracks?: SubtitleTrackOption[];
   backdropUrl: string;
   featured: boolean;
   trendingRank: number | null;
+  viewCount?: number;
+  popularityScore?: number;
   inWatchlist: boolean;
   isFavorite?: boolean;
   progressSeconds: number;

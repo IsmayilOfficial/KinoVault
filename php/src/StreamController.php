@@ -13,8 +13,8 @@ final class StreamController
         }
 
         $media = self::findMedia($mediaId);
-        if (!$media) {
-            return ['ok' => false, 'status' => 404, 'error' => 'Title not found.'];
+        if (!$media || !empty($media['is_upcoming']) || empty($media['media_filename'])) {
+            return ['ok' => false, 'status' => 404, 'error' => 'Title not found or not yet released.'];
         }
 
         if (!Security::isRatingAllowed($media['maturity_rating'], $profile['max_rating'])) {
@@ -35,7 +35,7 @@ final class StreamController
     {
         $profile = ProfileController::getActiveProfile($userId, $profileId);
         $media = self::findMedia($mediaId);
-        if (!$profile || !$media) {
+        if (!$profile || !$media || !empty($media['is_upcoming']) || empty($media['media_filename'])) {
             http_response_code(404);
             exit('Not found');
         }
@@ -50,7 +50,7 @@ final class StreamController
             exit('Expired or invalid stream license ticket');
         }
 
-        $filePath = Security::resolveSafeMediaPath($mediaRoot, $media['media_filename']);
+        $filePath = Security::resolveSafeMediaPath($mediaRoot, (string)$media['media_filename']);
         if ($filePath === null) {
             http_response_code(404);
             exit('Media unavailable');
@@ -133,7 +133,7 @@ final class StreamController
         }
         $profile = ProfileController::getActiveProfile($userId, $profileId);
         $media = self::findMedia($mediaId);
-        if (!$profile || !$media || !Security::isRatingAllowed($media['maturity_rating'], $profile['max_rating'])) {
+        if (!$profile || !$media || !empty($media['is_upcoming']) || !Security::isRatingAllowed($media['maturity_rating'], $profile['max_rating'])) {
             http_response_code(403);
             exit('Forbidden');
         }

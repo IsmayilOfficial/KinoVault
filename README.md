@@ -24,7 +24,8 @@ The repository includes two complete, aligned implementations:
 
 ### 1. Streaming Interface & Custom Video Player
 - **Featured Hero Showcase** with multi-stop contrast scrims, unboxed cinema metadata, and one-click resume/play.
-- **Curated Horizontal Rows**: *Continue Watching* (with progress bars), *Trending in Your Household*, *My List*, *Feature Films*, *Series & Limited Shows*, and *Documentary & Family Cinema*.
+- **Curated Horizontal Rows**: *Continue Watching* (with progress bars), *Popular* (high popularity/view count), *Trending in Your Household*, *My List*, *Feature Films*, *Series & Limited Shows*, *Documentary & Family Cinema*, and *Coming Soon* (upcoming releases with non-playable *Remind Me* reminders).
+- **Card Metadata & Quick Actions**: Visual age rating badges (`G`/`PG`/`PG-13`/`R` for films, `TV-G`/`TV-PG`/`TV-14`/`TV-MA` for shows) respecting the active profile maturity cap, plus a distinct **Heart** favorite toggle alongside **My List**.
 - **Custom HTML5 Player**: Play/pause, `-5s` / `+5s` seek, scrubbable timeline, volume & mute, playback speed (`0.75x`, `1x`, `1.25x`, `1.5x`), fullscreen, keyboard shortcuts (`Space`/`K`, `M`, `F`, `ArrowLeft`/`ArrowRight`, `Escape`), and automatic playback progress sync.
 
 ### 2. Category Browsing & Relevance Search
@@ -70,15 +71,15 @@ The repository includes two complete, aligned implementations:
 │       └── SecurityCenterView.tsx  # Session revocation, password update & security audit log
 └── php/
     ├── README.md                   # PHP deployment notes
-    ├── schema.sql                  # MySQL 8 / MariaDB relational schema + FULLTEXT index
-    ├── public/index.php            # Front controller, hardened session bootstrap & streaming UI
+    ├── schema.sql                  # MySQL 8 / MariaDB relational schema + FULLTEXT index + favorites table
+    ├── public/index.php            # Front controller, Popular/Trending/Coming Soon grids, favorites & streaming UI
     └── src/
         ├── Database.php            # Hardened PDO connection (native prepares, utf8mb4)
-        ├── Security.php            # Argon2id, CSRF, HMAC stream tickets, realpath path guard
+        ├── Security.php            # Argon2id, CSRF, HMAC stream tickets, age-rating formatter, realpath guard
         ├── AuthController.php      # Register, login, logout & hashed password reset tokens
         ├── ProfileController.php   # Profile CRUD, PIN lockout & watch history queries
-        ├── CatalogController.php   # FULLTEXT CMS search & genre/maturity filtering
-        └── StreamController.php    # HTTP 206 byte-range streaming & AES-128 DRM key endpoint
+        ├── CatalogController.php   # FULLTEXT CMS search, Popular/Trending/Upcoming rows, favorites & watchlist toggles
+        └── StreamController.php    # HTTP 206 byte-range streaming, upcoming-release block & AES-128 DRM key endpoint
 ```
 
 ---
@@ -172,6 +173,9 @@ The repository includes two complete, aligned implementations:
 | `POST` | `/api/profiles` | Auth + CSRF | Creates viewer profile (blocked for Kids profiles) |
 | `PATCH` | `/api/account/profile` | Active Profile + CSRF | Updates current profile name, avatar tone, and household display name |
 | `GET` | `/api/catalog` | Active Profile | Filters by `type`, `genre`, and scored query `q`, enforcing maturity limit |
+| `GET` | `/api/catalog/upcoming` | Active Profile | Returns upcoming releases filtered by profile maturity limit (`/?action=upcoming` in PHP) |
+| `POST` | `/api/watchlist/:mediaId` | Active Profile + CSRF | Toggles My List / Remind Me entry for active profile (`/?action=toggle_watchlist` in PHP) |
+| `POST` | `/api/favorites/:mediaId` | Active Profile + CSRF | Toggles Heart favorite status distinct from My List (`/?action=toggle_favorite` in PHP) |
 | `POST` | `/api/stream/:id/ticket` | Active Profile + CSRF | Issues 120-second HMAC-SHA256 signed stream license ticket |
 | `GET` | `/api/stream/:id?ticket=...` | Active Profile + Ticket | Streams MP4 via HTTP `206 Partial Content` after signature verification |
 | `GET` | `/api/history` | Active Profile | Returns chronological watch history for the active profile |
@@ -190,4 +194,8 @@ This workspace is initialized as a Git repository on the `main` branch. To publi
    ```bash
    git remote add origin https://github.com/<your-username>/kinovault-home-cinema.git
    git push -u origin main
+   ```
+3. After future edits, verify TypeScript/Vite build (and `php -l` when PHP is installed), stage, commit, and push in one command:
+   ```bash
+   npm run verify:push -- "feat: describe your change"
    ```

@@ -53,12 +53,21 @@ CREATE TABLE media_items (
     maturity_rating ENUM('G','PG','PG-13','R') NOT NULL DEFAULT 'PG-13',
     quality ENUM('4K HDR','1080p HD') NOT NULL DEFAULT '4K HDR',
     audio_format VARCHAR(32) NOT NULL DEFAULT 'Dolby Atmos',
+    audio_tracks_json JSON NULL,
+    subtitle_tracks_json JSON NULL,
     backdrop_url VARCHAR(255) NOT NULL,
-    media_filename VARCHAR(180) NOT NULL,
+    media_filename VARCHAR(180) NULL,
     drm_key_id CHAR(32) NULL,
     is_featured TINYINT(1) NOT NULL DEFAULT 0,
+    trending_rank TINYINT UNSIGNED NULL,
+    view_count INT UNSIGNED NOT NULL DEFAULT 0,
+    popularity_score TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    is_upcoming TINYINT(1) NOT NULL DEFAULT 0,
+    release_date_label VARCHAR(32) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_media_type_rating (media_type, maturity_rating),
+    INDEX idx_media_popular (is_upcoming, popularity_score DESC, view_count DESC),
+    INDEX idx_media_trending (is_upcoming, trending_rank),
     FULLTEXT INDEX ft_media_search (title, director, cast_list, synopsis)
 ) ENGINE=InnoDB;
 
@@ -96,6 +105,15 @@ CREATE TABLE watchlist (
     PRIMARY KEY (profile_id, media_id),
     CONSTRAINT fk_wl_profile FOREIGN KEY (profile_id) REFERENCES user_profiles(id) ON DELETE CASCADE,
     CONSTRAINT fk_wl_media FOREIGN KEY (media_id) REFERENCES media_items(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE favorites (
+    profile_id CHAR(36) NOT NULL,
+    media_id VARCHAR(64) NOT NULL,
+    favorited_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (profile_id, media_id),
+    CONSTRAINT fk_fav_profile FOREIGN KEY (profile_id) REFERENCES user_profiles(id) ON DELETE CASCADE,
+    CONSTRAINT fk_fav_media FOREIGN KEY (media_id) REFERENCES media_items(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE security_audit_log (
