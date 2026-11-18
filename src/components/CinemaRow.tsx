@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { MediaItem } from '../types';
+import { isRatingAllowed } from '../lib/maturity';
+import type { MaturityRating, MediaItem } from '../types';
 import { CinemaCard } from './CinemaCard';
 
 interface CinemaRowProps {
@@ -10,7 +11,9 @@ interface CinemaRowProps {
   onPlay: (item: MediaItem) => void;
   onMoreInfo: (item: MediaItem) => void;
   onToggleWatchlist: (item: MediaItem) => void;
+  onToggleFavorite?: (item: MediaItem) => void;
   showRanks?: boolean;
+  maxRating?: MaturityRating;
 }
 
 export function CinemaRow({
@@ -20,11 +23,14 @@ export function CinemaRow({
   onPlay,
   onMoreInfo,
   onToggleWatchlist,
+  onToggleFavorite,
   showRanks = false,
+  maxRating,
 }: CinemaRowProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const visibleItems = items.filter((item) => isRatingAllowed(item.maturityRating, maxRating));
 
-  if (items.length === 0) return null;
+  if (visibleItems.length === 0) return null;
 
   function scrollBy(direction: 'left' | 'right') {
     const el = scrollerRef.current;
@@ -71,14 +77,16 @@ export function CinemaRow({
         ref={scrollerRef}
         className="cinema-scroll flex gap-4 sm:gap-5 overflow-x-auto px-6 sm:px-10 max-w-[1440px] mx-auto"
       >
-        {items.map((item, idx) => (
+        {visibleItems.map((item, idx) => (
           <div key={item.id} className="w-[260px] sm:w-[300px] lg:w-[320px] shrink-0">
             <CinemaCard
               item={item}
               onPlay={onPlay}
               onMoreInfo={onMoreInfo}
               onToggleWatchlist={onToggleWatchlist}
+              onToggleFavorite={onToggleFavorite}
               rankNumber={showRanks ? idx + 1 : null}
+              maxRating={maxRating}
             />
           </div>
         ))}

@@ -50,12 +50,20 @@ export interface MediaItem {
   featured: boolean;
   trendingRank: number | null;
   inWatchlist: boolean;
+  isFavorite?: boolean;
   progressSeconds: number;
   lastWatchedAt: number;
+  isUpcoming?: boolean;
+  releaseDateLabel?: string | null;
 }
 
 export interface CatalogResponse {
   genres: string[];
+  items: MediaItem[];
+  totalAllowedCount: number;
+}
+
+export interface UpcomingCatalogResponse {
   items: MediaItem[];
   totalAllowedCount: number;
 }

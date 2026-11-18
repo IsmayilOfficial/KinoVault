@@ -60,6 +60,12 @@ export interface WatchlistRecord {
   addedAt: number;
 }
 
+export interface FavoriteRecord {
+  profileId: string;
+  mediaId: string;
+  favoritedAt: number;
+}
+
 export interface ProgressRecord {
   profileId: string;
   mediaId: string;
@@ -91,6 +97,7 @@ export interface StoreSchema {
   sessions: SessionRecord[];
   passwordResets: PasswordResetRecord[];
   watchlist: WatchlistRecord[];
+  favorites: FavoriteRecord[];
   progress: ProgressRecord[];
   watchHistory: WatchHistoryRecord[];
   auditLogs: SecurityAuditRecord[];
@@ -105,6 +112,7 @@ const EMPTY_STORE: StoreSchema = {
   sessions: [],
   passwordResets: [],
   watchlist: [],
+  favorites: [],
   progress: [],
   watchHistory: [],
   auditLogs: [],
@@ -131,6 +139,7 @@ export function loadStore(): StoreSchema {
       sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
       passwordResets: Array.isArray(parsed.passwordResets) ? parsed.passwordResets : [],
       watchlist: Array.isArray(parsed.watchlist) ? parsed.watchlist : [],
+      favorites: Array.isArray(parsed.favorites) ? parsed.favorites : [],
       progress: Array.isArray(parsed.progress) ? parsed.progress : [],
       watchHistory: Array.isArray(parsed.watchHistory) ? parsed.watchHistory : [],
       auditLogs: Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [],
@@ -328,6 +337,12 @@ export function ensureDemoHousehold(store: StoreSchema): AccountRecord {
     { profileId: primaryProfileId, mediaId: 'svalbard-echoes', addedAt: now - 4000_000 },
     { profileId: kidsProfileId, mediaId: 'clockwork-harbor', addedAt: now - 3000_000 }
   );
+
+  store.favorites.push({
+    profileId: primaryProfileId,
+    mediaId: 'meridian-nine',
+    favoritedAt: now - 3500_000,
+  });
 
   appendAuditLog(store, accountId, 'HOUSEHOLD_CREATED', 'Demo household initialized with profile maturity controls.');
   saveStore(store);

@@ -11,7 +11,14 @@ import { SecurityCenterView } from './components/SecurityCenterView';
 import { TitleDetailModal } from './components/TitleDetailModal';
 import { VideoPlayerModal } from './components/VideoPlayerModal';
 import { apiRequest, setCsrfToken, setSessionToken } from './lib/api';
-import type { AccountInfo, AuthStateResponse, CatalogResponse, MediaItem, UserProfile } from './types';
+import type {
+  AccountInfo,
+  AuthStateResponse,
+  CatalogResponse,
+  MediaItem,
+  UpcomingCatalogResponse,
+  UserProfile,
+} from './types';
 
 export default function App() {
   const [booting, setBooting] = useState(true);
@@ -20,6 +27,7 @@ export default function App() {
   const [activeProfile, setActiveProfile] = useState<UserProfile | null>(null);
 
   const [catalog, setCatalog] = useState<MediaItem[]>([]);
+  const [upcomingItems, setUpcomingItems] = useState<MediaItem[]>([]);
   const [browseItems, setBrowseItems] = useState<MediaItem[]>([]);
   const [genres, setGenres] = useState<string[]>(['All Titles']);
   const [catalogLoading, setCatalogLoading] = useState(false);
@@ -62,11 +70,23 @@ export default function App() {
     if (!activeProfile) return;
     setCatalogLoading(true);
     try {
-      const data = await apiRequest<CatalogResponse>('/api/catalog');
-      setCatalog(data.items);
-      setGenres(data.genres);
-    } catch {
-      setCatalog([]);
+      const [catalogResult, upcomingResult] = await Promise.allSettled([
+        apiRequest<CatalogResponse>('/api/catalog'),
+        apiRequest<UpcomingCatalogResponse>('/api/catalog/upcoming'),
+      ]);
+
+      if (catalogResult.status === 'fulfilled') {
+        setCatalog(catalogResult.value.items);
+        setGenres(catalogResult.value.genres);
+      } else {
+        setCatalog([]);
+      }
+
+      if (upcomingResult.status === 'fulfilled') {
+        setUpcomingItems(upcomingResult.value.items);
+      } else {
+        setUpcomingItems([]);
+      }
     } finally {
       setCatalogLoading(false);
     }
@@ -77,6 +97,7 @@ export default function App() {
       void loadCatalog();
     } else {
       setCatalog([]);
+      setUpcomingItems([]);
     }
   }, [activeProfile, loadCatalog]);
 
@@ -113,6 +134,7 @@ export default function App() {
     setProfiles([]);
     setActiveProfile(null);
     setCatalog([]);
+    setUpcomingItems([]);
     setSection('home');
   }
 
@@ -125,6 +147,7 @@ export default function App() {
     setActiveProfile(null);
     setPlayingItem(null);
     setDetailItem(null);
+    setUpcomingItems([]);
     setSection('home');
     setSelectedGenre('All Titles');
     setSelectedType('all');
@@ -139,10 +162,33 @@ export default function App() {
       const updateList = (list: MediaItem[]) =>
         list.map((m) => (m.id === item.id ? { ...m, inWatchlist: res.inWatchlist } : m));
       setCatalog(updateList);
+      setUpcomingItems(updateList);
       setBrowseItems(updateList);
       setDetailItem((prev) => (prev && prev.id === item.id ? { ...prev, inWatchlist: res.inWatchlist } : prev));
     } catch {
       // No-op
+    }
+  }
+
+  async function handleToggleFavorite(item: MediaItem) {
+    const nextFavorite = !Boolean(item.isFavorite);
+    const applyFavorite = (value: boolean) => {
+      const updateList = (list: MediaItem[]) =>
+        list.map((m) => (m.id === item.id ? { ...m, isFavorite: value } : m));
+      setCatalog(updateList);
+      setUpcomingItems(updateList);
+      setBrowseItems(updateList);
+      setDetailItem((prev) => (prev && prev.id === item.id ? { ...prev, isFavorite: value } : prev));
+    };
+
+    applyFavorite(nextFavorite);
+    try {
+      const res = await apiRequest<{ mediaId: string; isFavorite: boolean }>(`/api/favorites/${item.id}`, {
+        method: 'POST',
+      });
+      applyFavorite(res.isFavorite);
+    } catch {
+      applyFavorite(!nextFavorite);
     }
   }
 
@@ -179,8 +225,8 @@ export default function App() {
   }, [catalog]);
 
   const myListItems = useMemo(() => {
-    return catalog.filter((item) => item.inWatchlist);
-  }, [catalog]);
+    return [...catalog, ...upcomingItems].filter((item) => item.inWatchlist);
+  }, [catalog, upcomingItems]);
 
   const moviesRow = useMemo(() => {
     return catalog.filter((item) => item.mediaType === 'movie');
@@ -364,6 +410,8 @@ export default function App() {
                     onPlay={setPlayingItem}
                     onMoreInfo={setDetailItem}
                     onToggleWatchlist={handleToggleWatchlist}
+                    onToggleFavorite={handleToggleFavorite}
+                    maxRating={activeProfile.maxRating}
                   />
                 ))}
               </div>
@@ -404,6 +452,8 @@ export default function App() {
                     onPlay={setPlayingItem}
                     onMoreInfo={setDetailItem}
                     onToggleWatchlist={handleToggleWatchlist}
+                    onToggleFavorite={handleToggleFavorite}
+                    maxRating={activeProfile.maxRating}
                   />
                 ))}
               </div>
@@ -445,6 +495,8 @@ export default function App() {
                 onPlay={setPlayingItem}
                 onMoreInfo={setDetailItem}
                 onToggleWatchlist={handleToggleWatchlist}
+                onToggleFavorite={handleToggleFavorite}
+                maxRating={activeProfile.maxRating}
               />
 
               <CinemaRow
@@ -454,6 +506,8 @@ export default function App() {
                 onPlay={setPlayingItem}
                 onMoreInfo={setDetailItem}
                 onToggleWatchlist={handleToggleWatchlist}
+                onToggleFavorite={handleToggleFavorite}
+                maxRating={activeProfile.maxRating}
               />
 
               <CinemaRow
@@ -462,6 +516,8 @@ export default function App() {
                 onPlay={setPlayingItem}
                 onMoreInfo={setDetailItem}
                 onToggleWatchlist={handleToggleWatchlist}
+                onToggleFavorite={handleToggleFavorite}
+                maxRating={activeProfile.maxRating}
               />
 
               <CinemaRow
@@ -470,6 +526,8 @@ export default function App() {
                 onPlay={setPlayingItem}
                 onMoreInfo={setDetailItem}
                 onToggleWatchlist={handleToggleWatchlist}
+                onToggleFavorite={handleToggleFavorite}
+                maxRating={activeProfile.maxRating}
               />
 
               <CinemaRow
@@ -478,6 +536,8 @@ export default function App() {
                 onPlay={setPlayingItem}
                 onMoreInfo={setDetailItem}
                 onToggleWatchlist={handleToggleWatchlist}
+                onToggleFavorite={handleToggleFavorite}
+                maxRating={activeProfile.maxRating}
               />
 
               <CinemaRow
@@ -486,6 +546,19 @@ export default function App() {
                 onPlay={setPlayingItem}
                 onMoreInfo={setDetailItem}
                 onToggleWatchlist={handleToggleWatchlist}
+                onToggleFavorite={handleToggleFavorite}
+                maxRating={activeProfile.maxRating}
+              />
+
+              <CinemaRow
+                title="Coming Soon"
+                subtitle="Upcoming premieres arriving in your household vault"
+                items={upcomingItems}
+                onPlay={setDetailItem}
+                onMoreInfo={setDetailItem}
+                onToggleWatchlist={handleToggleWatchlist}
+                onToggleFavorite={handleToggleFavorite}
+                maxRating={activeProfile.maxRating}
               />
             </div>
           </div>

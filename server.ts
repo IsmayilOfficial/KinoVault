@@ -7,11 +7,13 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import {
   ALL_GENRES,
+  getAnyMediaById,
   getMediaById,
   isRatingAllowed,
   MATURITY_LEVELS,
   MEDIA_CATALOG,
   scoreAndFilterCatalog,
+  UPCOMING_CATALOG,
   type MaturityRating,
 } from './server/catalog.ts';
 import {
@@ -878,6 +880,7 @@ async function startServer(): Promise<void> {
 
     store.profiles = store.profiles.filter((p) => p.id !== profile.id);
     store.watchlist = store.watchlist.filter((w) => w.profileId !== profile.id);
+    store.favorites = store.favorites.filter((f) => f.profileId !== profile.id);
     store.progress = store.progress.filter((pr) => pr.profileId !== profile.id);
     store.watchHistory = store.watchHistory.filter((h) => h.profileId !== profile.id);
     for (const s of store.sessions) {
@@ -901,6 +904,9 @@ async function startServer(): Promise<void> {
 
     const watchlistIds = new Set(
       store.watchlist.filter((w) => w.profileId === profile.id).map((w) => w.mediaId)
+    );
+    const favoriteIds = new Set(
+      store.favorites.filter((f) => f.profileId === profile.id).map((f) => f.mediaId)
     );
     const progressMap = new Map(
       store.progress
@@ -937,6 +943,7 @@ async function startServer(): Promise<void> {
         featured: item.featured,
         trendingRank: item.trendingRank ?? null,
         inWatchlist: watchlistIds.has(item.id),
+        isFavorite: favoriteIds.has(item.id),
         progressSeconds: prog?.positionSeconds ?? 0,
         lastWatchedAt: prog?.updatedAt ?? 0,
       };
@@ -946,6 +953,55 @@ async function startServer(): Promise<void> {
       genres: ALL_GENRES,
       items: filtered.map(serializeItem),
       totalAllowedCount: allowedCatalog.length,
+    });
+  });
+
+  // Upcoming releases endpoint filtered by active profile maturity rating
+  app.get('/api/catalog/upcoming', requireActiveProfile, (req: Request, res: Response) => {
+    const profile = req.auth!.activeProfile!;
+    const store = loadStore();
+
+    const watchlistIds = new Set(
+      store.watchlist.filter((w) => w.profileId === profile.id).map((w) => w.mediaId)
+    );
+    const favoriteIds = new Set(
+      store.favorites.filter((f) => f.profileId === profile.id).map((f) => f.mediaId)
+    );
+
+    const allowedUpcoming = UPCOMING_CATALOG.filter((item) =>
+      isRatingAllowed(item.maturityRating, profile.maxRating)
+    );
+
+    const items = allowedUpcoming.map((item) => ({
+      id: item.id,
+      mediaType: item.mediaType,
+      seasonsLabel: item.seasonsLabel ?? null,
+      title: item.title,
+      tagline: item.tagline,
+      synopsis: item.synopsis,
+      director: item.director,
+      cast: item.cast,
+      year: item.year,
+      durationLabel: item.durationLabel,
+      durationSeconds: item.durationSeconds,
+      maturityRating: item.maturityRating,
+      genres: item.genres,
+      quality: item.quality,
+      audio: item.audio,
+      backdropUrl: item.backdropUrl,
+      featured: false,
+      trendingRank: null,
+      inWatchlist: watchlistIds.has(item.id),
+      isFavorite: favoriteIds.has(item.id),
+      progressSeconds: 0,
+      lastWatchedAt: 0,
+      isUpcoming: true,
+      releaseDateLabel: item.releaseDateLabel ?? 'Coming Soon',
+    }));
+
+    res.json({
+      items,
+      totalAllowedCount: allowedUpcoming.length,
     });
   });
 
@@ -1019,7 +1075,7 @@ async function startServer(): Promise<void> {
       return;
     }
 
-    const filePath = resolveSafeMediaPath(MEDIA_ROOT, media.mediaFilename);
+    const filePath = media.mediaFilename ? resolveSafeMediaPath(MEDIA_ROOT, media.mediaFilename) : null;
     if (!filePath || !fs.existsSync(filePath)) {
       res.status(404).json({ error: 'Media stream unavailable.' });
       return;
@@ -1072,7 +1128,7 @@ async function startServer(): Promise<void> {
 
   app.post('/api/watchlist/:mediaId', requireActiveProfile, requireCsrf, (req: Request, res: Response) => {
     const profile = req.auth!.activeProfile!;
-    const media = getMediaById(req.params.mediaId);
+    const media = getAnyMediaById(req.params.mediaId);
     if (!media) {
       res.status(404).json({ error: 'Title not found.' });
       return;
@@ -1094,6 +1150,32 @@ async function startServer(): Promise<void> {
     }
     saveStore(store);
     res.json({ mediaId: media.id, inWatchlist });
+  });
+
+  app.post('/api/favorites/:mediaId', requireActiveProfile, requireCsrf, (req: Request, res: Response) => {
+    const profile = req.auth!.activeProfile!;
+    const media = getAnyMediaById(req.params.mediaId);
+    if (!media) {
+      res.status(404).json({ error: 'Title not found.' });
+      return;
+    }
+    if (!isRatingAllowed(media.maturityRating, profile.maxRating)) {
+      res.status(403).json({ error: 'Title restricted for this profile.' });
+      return;
+    }
+
+    const store = loadStore();
+    const existingIdx = store.favorites.findIndex((f) => f.profileId === profile.id && f.mediaId === media.id);
+    let isFavorite = false;
+    if (existingIdx >= 0) {
+      store.favorites.splice(existingIdx, 1);
+      isFavorite = false;
+    } else {
+      store.favorites.push({ profileId: profile.id, mediaId: media.id, favoritedAt: Date.now() });
+      isFavorite = true;
+    }
+    saveStore(store);
+    res.json({ mediaId: media.id, isFavorite });
   });
 
   app.put('/api/progress/:mediaId', requireActiveProfile, requireCsrf, (req: Request, res: Response) => {

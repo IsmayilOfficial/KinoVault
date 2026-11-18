@@ -18,9 +18,11 @@ export interface MediaItem {
   quality: '4K HDR' | '1080p HD';
   audio: 'Dolby Atmos' | '5.1 Surround';
   backdropUrl: string;
-  mediaFilename: string;
+  mediaFilename?: string;
   featured: boolean;
   trendingRank?: number;
+  isUpcoming?: boolean;
+  releaseDateLabel?: string;
 }
 
 export const MATURITY_LEVELS: Record<MaturityRating, number> = {
@@ -205,10 +207,103 @@ export const MEDIA_CATALOG: MediaItem[] = [
   },
 ];
 
+export const UPCOMING_CATALOG: MediaItem[] = [
+  {
+    id: 'amber-observatory',
+    mediaType: 'movie',
+    title: 'The Amber Observatory',
+    tagline: 'Every century, the mountain dome opens for a single night.',
+    synopsis:
+      'When two siblings spend winter break with their astronomer aunt atop a snowbound observatory, an antique brass telescope reveals signals from a wandering comet.',
+    director: 'Nora Lindberg',
+    cast: ['Mckenna Grace', 'Stellan Skarsgard', 'Kerry Condon'],
+    year: 2026,
+    durationLabel: '1h 54m',
+    durationSeconds: 0,
+    maturityRating: 'PG',
+    genres: ['Family', 'Sci-Fi'],
+    quality: '4K HDR',
+    audio: 'Dolby Atmos',
+    backdropUrl: '/src/assets/images/cinema_amber_observatory_1795042658157.jpg',
+    featured: false,
+    isUpcoming: true,
+    releaseDateLabel: 'Dec 12',
+  },
+  {
+    id: 'silent-fjord',
+    mediaType: 'show',
+    seasonsLabel: 'Limited Series · 6 Episodes',
+    title: 'Silent Fjord',
+    tagline: 'Still water keeps every secret until the thaw.',
+    synopsis:
+      'A maritime hydrologist returns to a remote western fjord to decommission a weather station, only to uncover decades of missing logs hidden inside the boathouse.',
+    director: 'Joachim Solberg',
+    cast: ['Anders Danielsen Lie', 'Alicia Vikander', 'Kristofer Hivju'],
+    year: 2026,
+    durationLabel: '54m / ep',
+    durationSeconds: 0,
+    maturityRating: 'PG-13',
+    genres: ['Thriller & Noir', 'Drama'],
+    quality: '4K HDR',
+    audio: 'Dolby Atmos',
+    backdropUrl: '/src/assets/images/cinema_silent_fjord_1795042658243.jpg',
+    featured: false,
+    isUpcoming: true,
+    releaseDateLabel: 'Dec 28',
+  },
+  {
+    id: 'night-train-trieste',
+    mediaType: 'movie',
+    title: 'Night Train to Trieste',
+    tagline: 'Four compartments. One missing courier before dawn.',
+    synopsis:
+      'Boarded onto a winter sleeper crossing the Julian Alps, a diplomat realizes the encrypted treaty briefcase handcuffed to his seat has been swapped during a fogbound stop.',
+    director: 'Matteo Garrone',
+    cast: ['Franz Rogowski', 'Alba Rohrwacher', 'Viggo Mortensen'],
+    year: 2027,
+    durationLabel: '2h 09m',
+    durationSeconds: 0,
+    maturityRating: 'R',
+    genres: ['Thriller & Noir', 'Drama'],
+    quality: '4K HDR',
+    audio: '5.1 Surround',
+    backdropUrl: '/src/assets/images/cinema_night_train_trieste_1795042659306.jpg',
+    featured: false,
+    isUpcoming: true,
+    releaseDateLabel: 'Jan 15',
+  },
+  {
+    id: 'coral-cartographers',
+    mediaType: 'show',
+    seasonsLabel: '1 Season · 4 Episodes',
+    title: 'Reef Cartographers',
+    tagline: 'Charting the sunlit canyons beneath the Coral Sea.',
+    synopsis:
+      'Marine biologists and deep-sea pilots spend ninety days mapping untouched twilight coral arches with whisper-quiet submersibles and 8K low-light cinema optics.',
+    director: 'Elena Vance',
+    cast: ['Narrated by David Attenborough'],
+    year: 2027,
+    durationLabel: '50m / ep',
+    durationSeconds: 0,
+    maturityRating: 'G',
+    genres: ['Documentary'],
+    quality: '4K HDR',
+    audio: 'Dolby Atmos',
+    backdropUrl: '/src/assets/images/cinema_coral_cartographers_1795042659627.jpg',
+    featured: false,
+    isUpcoming: true,
+    releaseDateLabel: 'Feb 03',
+  },
+];
+
 export const ALL_GENRES = ['All Titles', 'Sci-Fi', 'Thriller & Noir', 'Drama', 'Documentary', 'Family'] as const;
 
 export function getMediaById(id: string): MediaItem | undefined {
   return MEDIA_CATALOG.find((item) => item.id === id);
+}
+
+export function getAnyMediaById(id: string): MediaItem | undefined {
+  return MEDIA_CATALOG.find((item) => item.id === id) ?? UPCOMING_CATALOG.find((item) => item.id === id);
 }
 
 // Indexed token relevance scoring for CMS catalog search

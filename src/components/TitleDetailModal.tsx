@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Check, Play, Plus, X } from 'lucide-react';
+import { Bell, CalendarClock, Check, Play, Plus, X } from 'lucide-react';
 import type { MediaItem } from '../types';
 
 interface TitleDetailModalProps {
@@ -65,17 +65,24 @@ export function TitleDetailModal({ item, onClose, onPlay, onToggleWatchlist }: T
               {item.title}
             </h2>
             <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onPlay(item);
-                }}
-                className="px-6 py-2.5 bg-[#E50914] hover:bg-[#C80812] text-white text-sm font-semibold rounded-lg inline-flex items-center gap-2 transition-colors whitespace-nowrap"
-              >
-                <Play className="w-4 h-4 fill-current" />
-                {item.progressSeconds > 0 ? 'Resume Film' : 'Play'}
-              </button>
+              {item.isUpcoming ? (
+                <div className="px-5 py-2.5 bg-black/75 border border-white/20 text-white text-sm font-medium rounded-lg inline-flex items-center gap-2 whitespace-nowrap">
+                  <CalendarClock className="w-4 h-4 text-[#E50914]" />
+                  {item.releaseDateLabel ? `Premieres ${item.releaseDateLabel}` : 'Coming Soon'}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onPlay(item);
+                  }}
+                  className="px-6 py-2.5 bg-[#E50914] hover:bg-[#C80812] text-white text-sm font-semibold rounded-lg inline-flex items-center gap-2 transition-colors whitespace-nowrap"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  {item.progressSeconds > 0 ? 'Resume Film' : 'Play'}
+                </button>
+              )}
 
               <button
                 type="button"
@@ -85,12 +92,12 @@ export function TitleDetailModal({ item, onClose, onPlay, onToggleWatchlist }: T
                 {item.inWatchlist ? (
                   <>
                     <Check className="w-4 h-4 text-[#E50914]" />
-                    In My List
+                    {item.isUpcoming ? 'Reminder Set' : 'In My List'}
                   </>
                 ) : (
                   <>
-                    <Plus className="w-4 h-4" />
-                    Add to My List
+                    {item.isUpcoming ? <Bell className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                    {item.isUpcoming ? 'Remind Me' : 'Add to My List'}
                   </>
                 )}
               </button>
